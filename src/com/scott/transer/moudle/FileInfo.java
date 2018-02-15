@@ -5,7 +5,7 @@ public class FileInfo {
 
     public String path;
 
-    public int type;
+    public int type; // 0 dir 1 file
 
     public long length;
     

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.URLDecoder;
 import java.nio.file.Path;
 
 import javax.servlet.ServletException;
@@ -29,9 +30,20 @@ public class UploadService extends BaseServletService{
 		if(!file.exists()) {
 			file.mkdirs();
 		}
-		log("path === " + mPath);
+		
+		try {
+			mPath = URLDecoder.decode(mPath, "utf-8");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		log("---- mPath =" + mPath);
 		
 		file = new File(Config.getTranserPath(mPath) + File.separator + mSessionId);
+		log("--- need create file = " + file.getAbsolutePath());
+		
+		if (!file.exists()) {
+			file.createNewFile();
+		}
 		RandomAccessFile rFile = new RandomAccessFile(file, "rw");
 		rFile.seek(mStartOffset);
 		

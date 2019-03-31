@@ -19,6 +19,9 @@ public class Config {
 			}
 		}
 		file = new File(file.getAbsolutePath() + File.separator + path);
+		if (!file.exists()) {
+			file.mkdirs();
+		}
 		return file.getAbsolutePath();
 	}
 	

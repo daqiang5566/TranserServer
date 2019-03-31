@@ -42,18 +42,11 @@ public class DownloadService extends BaseServletService{
 		
 		RandomAccessFile rFile = new RandomAccessFile(new File(path), "r");
 		rFile.seek(startOffSet);
+		log("--- startOffset = " + startOffSet + ", endOffset = " + endOffset);
 		
 		byte[] buff = new byte[BUFF_SIZE];
 		int len = 0;
 		long allLength = 0;
-		
-		resp.addHeader("Content-Length", allLength + "");
-		resp.addHeader("Content-Type", FileUtils.getMimeTypeByPath(path));
-		resp.addHeader("Accept", FileUtils.getMimeTypeByPath(path));
-
-		if (FileUtils.getFileName(path) != null) {
-			resp.addHeader("Content-Disposition", "attachment;filename=" + FileUtils.getFileName(path));
-		}
 		
 		OutputStream oStream = resp.getOutputStream();
 		while((len = rFile.read(buff)) != -1) {
@@ -62,12 +55,18 @@ public class DownloadService extends BaseServletService{
 			allLength += len;
 		}
 		
+		resp.addHeader("Content-Length", allLength + "");
+		resp.addHeader("Content-Type", FileUtils.getMimeTypeByPath(path));
+		resp.addHeader("Accept", FileUtils.getMimeTypeByPath(path));
+		if (FileUtils.getFileName(path) != null) {
+			resp.addHeader("Content-Disposition", "attachment;filename=" + FileUtils.getFileName(path));
+		}
+		
 		log("---- mimeType = " + FileUtils.getMimeTypeByPath(path));
 		log("---- mimeType = " + FileUtils.getFileName(path));
-
-		oStream.close();
+		log("---- allLength = " + allLength);
+		
 		rFile.close();
-		return;
 	}
 	
 	private long getEnfOffset(String content_range, HttpServletResponse resp) throws IOException {

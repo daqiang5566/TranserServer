@@ -2,6 +2,7 @@
     <wb-module deploy-name="TranserServer">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+        <wb-resource deploy-path="/WEB-INF/lib" source-path="/libs"/>
         <property name="context-root" value="TranserServer"/>
         <property name="java-output-path" value="/TranserServer/build/classes"/>
     </wb-module>

@@ -7,7 +7,11 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.activation.MimeType;
+import javax.activation.MimetypesFileTypeMap;
+
 import com.scott.transer.moudle.FileInfo;
+import com.sun.org.apache.regexp.internal.recompile;
 
 
 public class FileUtils {
@@ -64,5 +68,38 @@ public class FileUtils {
 	public static boolean checkFileExsits(String path) {
 		File file = new File(path);
 		return file.exists();
+	}
+	
+	public static boolean isFile(String path) {
+		if (path == null || path.isEmpty()) {
+			return false;
+		}
+		
+		File file = new File(path);
+		if (!file.exists()) {
+			return false;
+		}
+		
+		return file.isFile();
+	}
+	
+	public static String getMimeTypeByPath(String path) {
+		if (path == null || path.isEmpty()) {
+			return null;
+		}
+		
+		File file = new File(path);
+		if (!file.exists()) {
+			return null;
+		}
+		return new MimetypesFileTypeMap().getContentType(file);
+	}
+	
+	public static String getFileName(String path) {
+		if (path == null || path.isEmpty()) {
+			return null;
+		}
+		
+		return new File(path).getName();
 	}
 }

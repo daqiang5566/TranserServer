@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.json.simple.JSONObject;
 
@@ -18,17 +20,11 @@ import com.scott.transer.Config;
 @WebServlet("/upload")
 public class UploadService extends BaseServletService{
 	
-	private String mPath;
-	private String mFileName;
-	private String mSessionId;
-	private long mContentLength;
-	private long mStartOffset;
-	private long mEndOffset;
+	static final int BUFF_SIZE = 1 * 1024 * 1024;
 	
-	final int BUFF_SIZE = 1 * 1024 * 1024;
-	
-	@Override
-	protected void writeReponse() throws IOException, ServletException {
+	private void recvFile(String mPath, String mFileName, String mSessionId, long mStartOffset, 
+			long mEndOffset, long mContentLength, HttpServletRequest req,
+			HttpServletResponse resp) throws IOException {
 		File file = new File(Config.getTranserPath(mPath));
 		if(!file.exists()) {
 			file.mkdirs();
@@ -41,7 +37,7 @@ public class UploadService extends BaseServletService{
 		
 		int len = 0;
 		byte[] buff = new byte[BUFF_SIZE];
-		InputStream iStream = getRequest().getInputStream();
+		InputStream iStream = req.getInputStream();
 		log("start send ====");
 		while((len = iStream.read(buff)) != -1) {
 			rFile.write(buff,0,len);
@@ -51,16 +47,16 @@ public class UploadService extends BaseServletService{
 		iStream.close();
 
 		if((mEndOffset + 1) == mContentLength) {
-			String newPath = renameFile(file.getAbsolutePath());
+			String newPath = renameFile(file.getAbsolutePath(), mSessionId, mFileName);
 			log("newFile = " + newPath + ",file = " + file.getAbsolutePath());
 			file.renameTo(new File(newPath));
-			onSuccessful(getResponse().getOutputStream());
+			onSuccessful(resp.getOutputStream(), mPath, mFileName);
 		} else {
-			onPiceSuccessful(getResponse().getOutputStream());
+			onPiceSuccessful(resp.getOutputStream(), mStartOffset, mEndOffset);
 		}
 	}
 	
-	private void onPiceSuccessful(OutputStream oStream) {
+	private void onPiceSuccessful(OutputStream oStream, long mStartOffset, long mEndOffset) {
 		JSONObject jObj = new JSONObject();
 		jObj.put("code", 200);
 		jObj.put("start", mStartOffset);
@@ -73,7 +69,7 @@ public class UploadService extends BaseServletService{
 		log(jObj.toJSONString());
 	}
 	
-	private void onSuccessful(OutputStream oStream) {
+	private void onSuccessful(OutputStream oStream, String mPath, String mFileName) {
 		
 		JSONObject jObj = new JSONObject();
 		jObj.put("code", 0);
@@ -87,7 +83,7 @@ public class UploadService extends BaseServletService{
 		log(jObj.toJSONString());
 	}
 	
-	private String renameFile(String oldPath) {
+	private String renameFile(String oldPath, String mSessionId, String mFileName) {
 		String path = oldPath.replace(mSessionId, "");
 		path += mFileName;
 		log("newPath = " + path + ",oldPath = " + oldPath);
@@ -112,39 +108,35 @@ public class UploadService extends BaseServletService{
 	}
 
 	@Override
-	protected boolean readRequest() throws IOException, ServletException {
-		mPath = getRequest().getHeader("path");
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		String mPath = req.getHeader("path");
 		if(mPath == null || mPath == "") {
-			getResponse().sendError(404,"path = " + mPath + " Not Find!");
-			return false;
+			resp.sendError(404,"path = " + mPath + " Not Find!");
+			return;
 		}
 		
-		String content_disposition = getRequest().getHeader("Content-Disposition");
+		String content_disposition = req.getHeader("Content-Disposition");
 		if(content_disposition == null || content_disposition == "") {
-			getResponse().sendError(406,"Content-Disposition must be to set!");
-			return false;
+			resp.sendError(406,"Content-Disposition must be to set!");
+			return;
 		}
-		mFileName = content_disposition.split("=")[1];
+		String mFileName = content_disposition.split("=")[1];
 		mFileName = mFileName.substring(mFileName.indexOf("filename=") + 1,mFileName.length());
 		
-		mSessionId = getRequest().getHeader("Session-ID");
+		String mSessionId = req.getHeader("Session-ID");
 		
-		String content_range = getRequest().getHeader("Content-Range");
+		String content_range = req.getHeader("Content-Range");
 		if(content_range == null || content_range == "") {
-			getResponse().sendError(406,"Content-Range must be to set!");
-			return false;
+			resp.sendError(406,"Content-Range must be to set!");
+			return;
 		}
 		content_range = content_range.replace("bytes", "");
 		content_range = content_range.trim();
-		mStartOffset = Long.parseLong(content_range.split("-")[0]);
-		mEndOffset = Long.parseLong(content_range.split("-")[1].split("/")[0]);
-		mContentLength = Long.parseLong(content_range.split("-")[1].split("/")[1]);
+		long mStartOffset = Long.parseLong(content_range.split("-")[0]);
+		long mEndOffset = Long.parseLong(content_range.split("-")[1].split("/")[0]);
+		long mContentLength = Long.parseLong(content_range.split("-")[1].split("/")[1]);
 		log("path = " + mPath);
-		return true;
-	}
-	
-	@Override
-	protected boolean enablePost() {
-		return true;
+		
+		recvFile(mPath, mFileName, mSessionId, mStartOffset, mEndOffset, mContentLength, req, resp);
 	}
 }

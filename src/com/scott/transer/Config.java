@@ -3,11 +3,15 @@ package com.scott.transer;
 import java.io.File;
 
 public class Config {
-	public static String serverRootPath = "D://";
+	public static String serverRootPath = "D:" + File.separator;
 	
 	public static String transerRootPath = "transer_server";
 	
 	public static String getTranserPath(String path) {
+		if (path == null) {
+			path = "";
+		}
+		
 		File file = new File(serverRootPath + File.separator + transerRootPath);
 		if(!file.exists()) {
 			if(!file.mkdirs()) {
